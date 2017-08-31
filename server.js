@@ -11,12 +11,21 @@ var cors = require("cors"),
     debug = require("debug"),
     express = require("express"),
     morgan = require("morgan"),
-    responseTime = require("response-time");
+    responseTime = require("response-time"),
+    lru = require("lru-cache"),
+    handlebars = require("handlebars"),
+    sqlstring = require("sqlstring");
+
+var CACHE = lru(50);
 
 var serve = require("./lib/app"),
     tessera = require("./lib/index");
 
 debug = debug("tessera");
+
+handlebars.registerHelper('sqlEscape', function(str) {
+  return new handlebars.SafeString(sqlstring.escape(str));
+});
 
 module.exports = function(opts, callback) {
   var app = express().disable("x-powered-by"),
@@ -86,6 +95,17 @@ module.exports = function(opts, callback) {
     }
 
     Object.keys(config).forEach(function(prefix) {
+
+      // config[prefix] is a string
+      var source = config[prefix];
+
+      if (source.source) {
+        // actually, it's an object
+        source = source.source;
+      }
+
+      var sourceTemplate = handlebars.compile(source);
+
       if (config[prefix].timing !== false) {
         app.use(prefix, responseTime());
       }
@@ -96,29 +116,40 @@ module.exports = function(opts, callback) {
 
       app.use(prefix, express.static(path.join(__dirname, "public")));
       app.use(prefix, express.static(path.join(__dirname, "bower_components")));
-      app.use(prefix, serve(tilelive, config[prefix]));
 
-      // config[prefix] is a string
-      var source = config[prefix];
+      app.use(prefix, function(req, res, next) {
 
-      if (source.source != null) {
-        // actually, it's an object
-        source = source.source;
-      }
+        var key = prefix + ',' + Object.keys(req.query).sort().map(function(key) {return key + '=' + req.query[key];});
+        var route;
 
-      tilelive.load(source, function(err, src) {
+        if (!(route = CACHE.get(key))) {
+          var interpolatedSource = sourceTemplate(Object.assign({}, config[prefix].defaultParams, req.query));
+          debug('Caching route: ' + key);
+          debug('Interpolated source:' + interpolatedSource);
+          var patchedConfig = Object.assign({}, config[prefix], {source: interpolatedSource});
+          route = serve(tilelive, patchedConfig);
+          CACHE.set(key, route);
+        }
+
+        return route(req, res, next);
+      });
+
+      // defaultParams are used for xray
+      var xraySource = sourceTemplate(config[prefix].defaultParams);
+      tilelive.load(xraySource, function(err, src) {
         if (err) {
           throw err;
         }
 
         return tessera.getInfo(src, function(err, info) {
+
           if (err) {
             debug(err.stack);
             return;
           }
 
           if (info.format === "pbf") {
-            app.use(prefix + "/_", serve(tilelive, "xray+" + config[prefix].source));
+            app.use(prefix + "/_", serve(tilelive, "xray+" + xraySource));
             app.use(prefix + "/_", express.static(path.join(__dirname, "public")));
             app.use(prefix + "/_", express.static(path.join(__dirname, "bower_components")));
           }

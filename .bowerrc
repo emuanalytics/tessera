@@ -1,3 +1,4 @@
 {
-  "interactive": false
+  "interactive": false,
+  "allow_root": true
 }

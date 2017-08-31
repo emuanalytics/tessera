@@ -15,6 +15,8 @@
   },
   "dependencies": {
     "@mapbox/abaculus": "^2.1.0",
+    "@mapbox/sphericalmercator": "^1.0.2",
+    "@mapbox/tilelive": "^5.3.3",
     "cachecache": "^1.0.1",
     "clone": "^1.0.2",
     "cors": "^2.5.2",
@@ -24,8 +26,7 @@
     "morgan": "^1.5.0",
     "nomnom": "^1.8.1",
     "response-time": "^2.2.0",
-    "@mapbox/sphericalmercator": "^1.0.2",
-    "@mapbox/tilelive": "^5.3.3",
+    "sqlstring": "^2.2.0",
     "tilelive-cache": "^0.7.1",
     "tilelive-modules": "^0.3.4"
   }
