@@ -25,9 +25,9 @@ var serve = require("./lib/app"),
 
 debug = debug("tessera");
 
-// Add morgan token 'id' that extracts user id from JWT or 'anon' if not authenticated
+// Add morgan token 'id' that extracts user email from JWT or 'anon' if not authenticated
 morgan.token('id', function getId (req) {
-  return req.user && req.user.id || 'anon';
+  return req.user && req.user.email || 'anon';
 });
 
 handlebars.registerHelper('sqlEscape', function(str) {
