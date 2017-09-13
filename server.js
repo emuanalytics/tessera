@@ -14,7 +14,9 @@ var cors = require("cors"),
     responseTime = require("response-time"),
     lru = require("lru-cache"),
     handlebars = require("handlebars"),
-    sqlstring = require("sqlstring");
+    sqlstring = require("sqlstring"),
+    jwt = require('express-jwt'),
+    cookieParser = require('cookie-parser');
 
 var CACHE = lru(50);
 
@@ -22,6 +24,11 @@ var serve = require("./lib/app"),
     tessera = require("./lib/index");
 
 debug = debug("tessera");
+
+// Add morgan token 'id' that extracts user id from JWT or 'anon' if not authenticated
+morgan.token('id', function getId (req) {
+  return req.user && req.user.id || 'anon';
+});
 
 handlebars.registerHelper('sqlEscape', function(str) {
   return new handlebars.SafeString(sqlstring.escape(str));
@@ -39,9 +46,34 @@ module.exports = function(opts, callback) {
   // load and register tilelive modules
   require("tilelive-modules/loader")(tilelive, opts);
 
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV === "production") {
+    app.use(morgan(":remote-addr - :id [:date[clf]] \":method :url HTTP/:http-version\" :status :res[content-length] - :response-time ms"));
+  }
+  else {
     // TODO configurable logging per-style
     app.use(morgan("dev"));
+  }
+
+  if (opts.jwtSecret) {
+    app.use(cookieParser());
+    app.use(jwt({
+      secret: opts.jwtSecret,
+      getToken: function fromRequest (req) {
+        if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
+          return req.headers.authorization.split(' ')[1];
+        } else if (req.query && req.query.token) {
+          return req.query.token;
+        } else if (req.cookies && req.cookies.token) {
+          return req.cookies.token;
+        }
+        return null;
+      }
+    }));
+    app.use(function (err, req, res, next) {
+      if (err.name === 'UnauthorizedError') {
+        res.status(401).send('Invalid token');
+      }
+    });
   }
 
   if (opts.uri) {

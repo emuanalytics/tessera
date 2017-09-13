@@ -32,6 +32,12 @@ var nomnom = require("nomnom")
       help: "Set interface to listen on",
       default: "0.0.0.0"
     },
+    jwtSecret: {
+      full: "jwt-secret",
+      abbr: "j",
+      metavar: "SECRET",
+      help: "Enable JWT cookie authorisation using supplied secret"
+    },
     require: {
       abbr: "r",
       metavar: "MODULE",

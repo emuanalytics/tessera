@@ -1,4 +1,6 @@
 node_modules/
 bower_components/
+data/
+config/
 .idea/
 *.iml
