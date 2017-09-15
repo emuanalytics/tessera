@@ -122,6 +122,8 @@ Options:
    -c CONFIG, --config CONFIG          Provide a configuration file or directory
    -p PORT, --port PORT                Set the HTTP Port  [8080]
    -b HOST, --bind HOST                Set interface to listen on [0.0.0.0]
+   -m, --multiprocess                  Start multiple processes  [false]
+   -P, --processes                     Number of processes to start  [8]
    -r MODULE, --require MODULE         Require a specific tilelive module
    -S SIZE, --source-cache-size SIZE   Set the source cache size (in # of sources)  [10]
    -s SOCKET, --socket SOCKET          Listen on unix socket
@@ -206,10 +208,10 @@ If `--config` is set to a directory, all JSON files in it will be concatenated
 together to form a single configuration. In the case of repeated options or
 paths, the last one will win (where files are loaded in alphabetical order).
 
-For sources that render rasters from vector tiles at and have a max zoom level 
-that is higher than the max zoom level of the vector tiles it can be helpful to 
-have additional variables available for headers that represent the vector tile 
-that a raster was rendered from. This can be enabled with an additional source 
+For sources that render rasters from vector tiles at and have a max zoom level
+that is higher than the max zoom level of the vector tiles it can be helpful to
+have additional variables available for headers that represent the vector tile
+that a raster was rendered from. This can be enabled with an additional source
 option in the configuration file:
 
 ```javascript
@@ -223,13 +225,23 @@ This will make three additional values available for header templates:
 * `tile.sourceX`
 * `tile.sourceY`
 
-For example: if `sourceMaxZoom` is set to 14, a request for tile 16/100/100 
+For example: if `sourceMaxZoom` is set to 14, a request for tile 16/100/100
 will set the following variables:
 
 * `tile.sourceZoom = 14`
 * `tile.sourceX = 25`
 * `tile.sourceY = 25`
 
+## Multiprocess mode
+
+By default, tessera runs in a single process (modules, e.g. Mapnik, may use
+multiple threads). For sources that are CPU intensive  to render, or when
+running on servers with large numbers of CPU cores there can be significant
+performance improvements from running in multiprocess mode. When multiprocess
+mode is enabled with the `--multiprocess` option multiple processes will be
+started, with each process running a single thread, enabling many requests to be
+served at once. The number of processes to be started defaults to the number of
+CPU cores on the host, but can be configured with the `--processes` option.
 
 ## Environment Variables
 
