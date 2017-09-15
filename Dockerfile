@@ -27,7 +27,7 @@ RUN npm install --unsafe-perm
 RUN npm install mbtiles tilelive-vector tilelive-xray
 
 # Install customised Emu variants
-RUN npm install git+https://github.com/emuanalytics/tilelive-modules.git#b51e280 git+https://github.com/emuanalytics/tilelive-postgis.git#b86c993
+RUN npm install git+https://github.com/emuanalytics/tilelive-modules.git#b51e280 git+https://github.com/emuanalytics/tilelive-postgis.git#ae2bbda2
 
 RUN mkdir /data
 RUN mkdir /config
